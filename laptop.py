@@ -1,4 +1,4 @@
-from tkinter.constants import FALSE
+from tkinter.constants import FALSE, RIGHT
 from guizero import *
 from tksheet import Sheet
 import tkinter as tk
@@ -17,7 +17,10 @@ week_day = ""
 week_days = ["Monday","Tuesday","Wednesday","Thursday","Friday","Saturday","Sunday"]
 ctypes.windll.shcore.SetProcessDpiAwareness(1)
 db = sqlite3.connect("laptop.db")
-app = App(title= "hello",width= 820,height=430)
+app = App(title= "hello",width= 815,height=430)
+
+#app.tk.state('zoomed')
+
 command = """ create table if not exists specs (
               barcode text primary key not null,
               manufacturer text not null,
@@ -128,7 +131,7 @@ def get_cpu_data():
     global cpus_intel
     cpus_intel = []
     for i in current_cpu:
-        cpus_intel.append(i)
+        cpus_intel.append(i[0])
     #######
     command = "Select * from amd_cpus"
     c = db.cursor()
@@ -137,7 +140,7 @@ def get_cpu_data():
     global cpus_amd
     cpus_amd = []
     for i in current_cpu:
-        cpus_amd.append(i)
+        cpus_amd.append(i[0])
     #########
     command = "Select * from brands"
     c = db.cursor()
@@ -172,7 +175,7 @@ def chg_comp():
          cpus = cpus_intel
          cpu.clear()
          for i in cpus:
-            cpu.append(i[0])   
+            cpu.append(i)   
     elif(company.value == "amd"):
          selected_cpu = "amd"
          gen_amd.show()
@@ -180,7 +183,7 @@ def chg_comp():
          cpus = cpus_amd
          cpu.clear()
          for i in cpus:
-            cpu.append(i[0])
+            cpu.append(i)
 def check_value(obj,max,text):
     value = obj.value
     value_int = 0
@@ -766,8 +769,7 @@ def backup():
          raise
 
 def open_db_dir():
-    #info("hi","open db dir")
-    webbrowser.open("""D:\laptop project""")
+    webbrowser.open(os.getcwd())
 
 def get_time(type=""):
     global year , month , day , hour , minutes , sec , conntected_to_internet
@@ -802,28 +804,71 @@ def get_time(type=""):
     #print(f"{year}/{month}/{day} {week_day}  {hour}:{minutes}:{sec}")
 def trial_vesion(end):
     get_time("silent")
-    current = year*month*day
-    if(end <= current):
+    if(end <= year):
         error("hi","trail version ended plase call dev osama breman to re-activate \n 0951736966 whatsapp only")
         exit()
     elif(conntected_to_internet == False):
         error("hi","please connect to internet to check your version stats...")    
         exit()
-def get_current_var(year,month,day):
-    return year*month*day
-#print(get_current_var(2021,10,15))
-#trial_vesion(303150)
-#get_time()
+def add_value_cpu_intel():
+    global cpus_intel
+    global intel_list
+    global list_window
+    if(add.value != ""):
+        intel_list.append(add.value)
+    else:
+        error("hi","cant add empty value")   
+        list_window.focus()
+    add.value = ""    
+    print(intel_list.items)
+def remove_value_intel_cpu():
+    global cpus_intel
+    global intel_list
+    if intel_list.value != None:
+        for i in intel_list.value:
+            intel_list.remove(i)   
+    else:
+        info("hi","No item(s) selected!")
+        list_window.focus() 
+def save_value_intel_cpu():
+    global cpus_intel
+    global intel_list
+    db.execute("delete from intel_cpus") 
+    db.commit()
+    db.execute(""" insert into intel_cpus values ("choose cpu") """)
+    db.commit()
+    for i in intel_list.items:
+       db.execute(f"""insert into intel_cpus values ("{i}")""")
+       db.commit()              
+def edit_intel_cpus():
+    global cpus_intel
+    global list_window
+    list_window =  Window(app,width= 500 ,height= 500)
+    lstbox = Box(list_window,align= "left",border= 2,height=500,width=200)
+    global intel_list
+    intel_list = ListBox(lstbox, items=cpus_intel[1:],scrollbar=True,height=500,width=200,multiselect=True)
+    Box(list_window,align="left",width=90,height=500)
+    add_box = Box(list_window,align="left")
+    global add 
+    add = TextBox(add_box,align= "top",width=15)
+    add_button = PushButton(add_box,align="top",text = "add value",command = add_value_cpu_intel)
+    delete_button = PushButton(add_box,align="top",text = "delet selection",command=remove_value_intel_cpu)
+    save_button = PushButton(add_box,align="top",text = "save changes",command=save_value_intel_cpu)
+    #add.tk.config(pady = 10) 
+    
+get_time()
 init_cpu_data()
 get_cpu_data()
+#trial_vesion(2022)
 Text(app,text ="Laptop Data Base -Osmax- Verison 0.2",align = "top",width="fill")
 ############################################################################################################
 ############################################################################################################
 ############################################################################################################
 #menu
-menu = MenuBar(app,toplevel = ["file","search","advanced","about"]
+menu = MenuBar(app,toplevel = ["file","edit","search","advanced","about"]
                ,options=[
                    [["open db directory",open_db_dir],["exit",ext]],
+                   [["edit intel cpus",edit_intel_cpus]],
                    [["search by barcode",search_barcode],["show all devices",search],["advanced search",search_advanced]],
                    [["delete data base",delete_db],["backup data base",backup]],
                    [["about",about],["visit my channel",youtube_visit]] ])
